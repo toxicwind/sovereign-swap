@@ -183,7 +183,7 @@ jobs:
           AUDIO_REF: ${{ inputs.audio_hash }}
           IK_LLAMA_REF: ${{ inputs.ik_llama_hash }}
           LS_VERSION: ${{ inputs.ls_hash }}
-          DOCKER_IMAGE_TAG: ghcr.io/mostlygeek/llama-swap:unified-${{ inputs.backend }}
+          DOCKER_IMAGE_TAG: ghcr.io/${{ github.repository }}:unified-${{ inputs.backend }}
           # When running under act, use the local builder that has warm ccache.
           # On GitHub Actions, BUILDX_BUILDER is unset so docker uses the builder
           # created by setup-buildx-action above.
@@ -195,7 +195,7 @@ jobs:
       - name: Push to GitHub Container Registry
         if: ${{ !env.ACT && inputs.push_to_ghcr }}
         run: |
-          BASE_TAG="ghcr.io/mostlygeek/llama-swap:unified-${{ inputs.backend }}"
+          BASE_TAG="ghcr.io/${{ github.repository }}:unified-${{ inputs.backend }}"
           DATE_TAG=$(date -u +%Y-%m-%d)
 
           docker push "${BASE_TAG}"

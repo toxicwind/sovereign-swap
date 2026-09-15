@@ -56,7 +56,11 @@ CUDA_VERSION="${CUDA_VERSION:-12.9.1}"
 # commit, so sharing the package would bury :unified-cuda under thousands of
 # :art-* tags. It also keeps them out of reach of the delete-untagged cleanup
 # in containers.yml, which is scoped to `package: llama-swap`.
-ARTIFACT_REPO="${ARTIFACT_REPO:-ghcr.io/mostlygeek/llama-swap-build}"
+#
+# The default is fork-aware: under CI it derives from GITHUB_REPOSITORY so a
+# fork pushes to its own ghcr.io namespace instead of upstream's (which 403s
+# with "permission_denied: The requested installation does not exist").
+ARTIFACT_REPO="${ARTIFACT_REPO:-ghcr.io/${GITHUB_REPOSITORY:-mostlygeek/llama-swap}-build}"
 
 # Upstream projects compiled into the image. ik-llama is CUDA only.
 ALL_PROJECTS=(whisper sd audio llama ik-llama)
