@@ -584,7 +584,13 @@ echo "=========================================="
 echo ""
 
 ROOTLESS_TAG="${DOCKER_IMAGE_TAG}-rootless"
-docker buildx build --load -t "${ROOTLESS_TAG}" - <<EOF
+# NOTE: classic `docker build` (docker driver) resolves FROM against the local
+# image store. `docker buildx build` with the docker-container driver (GitHub
+# Actions default) cannot see the just-built unified image locally and falls
+# back to pulling ${DOCKER_IMAGE_TAG} from GHCR, where it does not exist yet
+# (it is pushed in a later step) -> "not found". Do not switch this back to
+# buildx without also making the base image visible to that builder.
+docker build -t "${ROOTLESS_TAG}" - <<EOF
 FROM ${DOCKER_IMAGE_TAG}
 USER root
 RUN groupadd --system --gid 10001 llama-swap && \\
