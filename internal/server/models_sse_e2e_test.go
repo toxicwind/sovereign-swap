@@ -47,11 +47,11 @@ func TestModelEvents_EndToEnd(t *testing.T) {
 	time.Sleep(60 * time.Millisecond)
 
 	// --- simulate on-demand LOAD of m1 ---
-	stub.running["m1"] = process.StateReady
+	stub.setRunningState("m1", process.StateReady)
 	time.Sleep(120 * time.Millisecond)
 
 	// --- simulate UNLOAD of m1 ---
-	delete(stub.running, "m1")
+	stub.deleteRunningState("m1")
 	time.Sleep(120 * time.Millisecond)
 
 	// --- assert: exactly one loaded + one unloaded event, correct envelope ---

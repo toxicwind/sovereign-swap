@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -29,6 +30,10 @@ type stubRouter struct {
 	response      string
 	serveHTTP     func(http.ResponseWriter, *http.Request)
 	shutdownCalls atomic.Int32
+	// runningMu guards running: watchModelState reads it via RunningModels()
+	// while tests mutate it. The real baseRouter returns a snapshot; the
+	// stub mirrors that contract with a locked copy.
+	runningMu     sync.Mutex
 	running       map[string]process.ProcessState
 	unloadCalls   atomic.Int32
 	unloadModels  []string
@@ -55,7 +60,33 @@ func (s *stubRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(s.response))
 }
 
-func (s *stubRouter) RunningModels() map[string]process.ProcessState { return s.running }
+func (s *stubRouter) RunningModels() map[string]process.ProcessState {
+	s.runningMu.Lock()
+	defer s.runningMu.Unlock()
+	m := make(map[string]process.ProcessState, len(s.running))
+	for k, v := range s.running {
+		m[k] = v
+	}
+	return m
+}
+
+// setRunningState and deleteRunningState mutate the stub running map under
+// the same lock RunningModels takes, so concurrent watchModelState polls
+// never race test-driven state changes.
+func (s *stubRouter) setRunningState(id string, st process.ProcessState) {
+	s.runningMu.Lock()
+	defer s.runningMu.Unlock()
+	if s.running == nil {
+		s.running = make(map[string]process.ProcessState)
+	}
+	s.running[id] = st
+}
+
+func (s *stubRouter) deleteRunningState(id string) {
+	s.runningMu.Lock()
+	defer s.runningMu.Unlock()
+	delete(s.running, id)
+}
 func (s *stubRouter) Unload(timeout time.Duration, models ...string) {
 	s.unloadCalls.Add(1)
 	s.unloadTimeout = timeout
