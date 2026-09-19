@@ -12,6 +12,11 @@ on:
       - "go.sum"
       - "Makefile"
       - ".github/workflows/go-ci.yml"
+      # Dockerfiles + the toolchain guard: a Go pin bump is backend source
+      - "docker/**"
+      - "**/Dockerfile*"
+      - "**/*.Containerfile"
+      - "scripts/toolchain-drift-guard.py"
 
   pull_request:
     branches: ["main"]
@@ -22,11 +27,27 @@ on:
       - "go.sum"
       - "Makefile"
       - ".github/workflows/go-ci.yml"
+      - "docker/**"
+      - "**/Dockerfile*"
+      - "**/*.Containerfile"
+      - "scripts/toolchain-drift-guard.py"
 
   # Allows manual triggering of the workflow
   workflow_dispatch:
 
 jobs:
+  # Guard for the 2026-09-17 incident: a Dockerfile's `FROM golang:` pin
+  # lagging the `go` directive of what it builds (here, upstream
+  # llama-swap's go.mod fetched at build time) fails here in seconds
+  # instead of after hours of compiling in the unified image workflow.
+  toolchain-drift-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
+
+      - name: Toolchain drift guard
+        run: python3 scripts/toolchain-drift-guard.py
+
   run-tests:
     runs-on: ubuntu-latest
     steps:
